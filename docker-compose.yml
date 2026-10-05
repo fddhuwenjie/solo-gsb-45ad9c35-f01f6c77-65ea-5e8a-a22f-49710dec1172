@@ -1,0 +1,13 @@
+services:
+  inspection-desk:
+    build: .
+    image: cable-joint-inspection-desk:latest
+    container_name: cable-joint-inspection-desk
+    ports:
+      - "8000:8000"
+    volumes:
+      - inspection-data:/data
+    restart: unless-stopped
+
+volumes:
+  inspection-data:
