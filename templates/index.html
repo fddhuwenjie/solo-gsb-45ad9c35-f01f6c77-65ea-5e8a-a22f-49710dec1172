@@ -1,0 +1,134 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>电缆隧道接头巡检复核台</title>
+  <link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+  <header class="topbar">
+    <h1>电缆隧道接头巡检复核台</h1>
+    <nav class="tabs">
+      <button class="tab active" data-tab="entry">录入</button>
+      <button class="tab" data-tab="board">复核台</button>
+      <button class="tab" data-tab="evidence">证据链</button>
+      <button class="tab" data-tab="reports">封存报告</button>
+    </nav>
+  </header>
+
+  <main>
+    <!-- 录入 -->
+    <section id="tab-entry" class="panel active">
+      <div class="toolbar">
+        <div class="seg">
+          <button class="seg-btn active" data-form="obs">观测读数录入</button>
+          <button class="seg-btn" data-form="review">复测 / 人工复核</button>
+        </div>
+        <button id="btn-seed" class="ghost">载入演示数据</button>
+      </div>
+
+      <form id="form-obs" class="card form-card">
+        <input type="hidden" name="supersedes_id" id="obs-supersedes">
+        <div class="correction-banner" id="correction-banner" hidden>
+          更正/补录模式：正在取代观测 <b id="correction-target"></b>。
+          原始记录不会被覆盖，将标记为已被取代。
+          <button type="button" class="link" id="correction-cancel">取消更正</button>
+        </div>
+        <div class="grid">
+          <label>线路名称<input name="line_name" required placeholder="如：北线 220kV"></label>
+          <label>线路里程 (km)<input name="mileage" type="number" step="0.001" required placeholder="如：3.710"></label>
+          <label>接头编号<input name="joint_code" required placeholder="如：J-03"></label>
+          <label>巡检批次<input name="batch" required placeholder="如：2026-09-A"></label>
+          <label>巡检员<input name="inspector" required></label>
+          <label>负荷区间下限 (A)<input name="load_low" type="number" required></label>
+          <label>负荷区间上限 (A)<input name="load_high" type="number" required></label>
+          <label>测温距离 (m)<input name="measure_distance" type="number" step="0.01" required></label>
+          <label>温差读数 (K)<input name="delta_temp" type="number" step="0.1" required></label>
+          <label>设备校准版本<input name="calibration_version" required placeholder="如：CAL-2026Q2"></label>
+        </div>
+        <label class="full" id="correction-note-wrap" hidden>
+          更正/补录原因（必填）<textarea name="correction_note" rows="2"></textarea>
+        </label>
+        <div class="actions">
+          <button type="submit" class="primary">提交观测（只追加，不覆盖）</button>
+        </div>
+      </form>
+
+      <form id="form-review" class="card form-card" hidden>
+        <div class="seg">
+          <button type="button" class="seg-btn active" data-kind="retest">现场复测</button>
+          <button type="button" class="seg-btn" data-kind="manual">人工复核</button>
+        </div>
+        <input type="hidden" name="kind" value="retest">
+        <div class="grid">
+          <label>线路名称<input name="line_name" required></label>
+          <label>线路里程 (km)<input name="mileage" type="number" step="0.001" required></label>
+          <label>接头编号<input name="joint_code" required></label>
+          <label>巡检批次<input name="batch" required></label>
+          <label>复核人<input name="reviewer" required></label>
+          <label id="wrap-result">复测温差 (K)<input name="result" type="number" step="0.1"></label>
+          <label class="span2" id="wrap-opinion" hidden>明确复核意见
+            <textarea name="opinion" rows="2" placeholder="如：确认绝缘受潮，48 小时内停电更换"></textarea>
+          </label>
+          <label class="span2">备注<input name="note"></label>
+        </div>
+        <div class="actions">
+          <button type="submit" class="primary">提交复核记录</button>
+        </div>
+        <p class="hint">复核记录的时间晚于该接头-批次的最新观测时，才视为“当前复测/当前意见”，可用于封存覆盖。</p>
+      </form>
+
+      <div id="entry-result" class="card result-card" hidden></div>
+    </section>
+
+    <!-- 复核台 -->
+    <section id="tab-board" class="panel">
+      <div class="toolbar">
+        <label>批次
+          <select id="board-batch" class="filter"><option value="">全部批次</option></select>
+        </label>
+        <label>线路
+          <select id="board-line" class="filter"><option value="">全部线路</option></select>
+        </label>
+        <button id="board-refresh" class="ghost">刷新</button>
+      </div>
+      <div id="board-summary" class="summary"></div>
+      <div id="board-list" class="board-list"></div>
+    </section>
+
+    <!-- 证据链 -->
+    <section id="tab-evidence" class="panel">
+      <div class="toolbar">
+        <label>线路
+          <select id="ev-line" class="filter"></select>
+        </label>
+        <label>批次（可选）
+          <select id="ev-batch" class="filter"><option value="">全部批次</option></select>
+        </label>
+        <button id="ev-refresh" class="ghost">查看</button>
+      </div>
+      <div id="evidence-list"></div>
+    </section>
+
+    <!-- 封存报告 -->
+    <section id="tab-reports" class="panel">
+      <div class="toolbar">
+        <label>批次
+          <select id="rp-batch" class="filter"></select>
+        </label>
+        <button id="rp-preview" class="ghost">封存预检</button>
+        <input id="rp-operator" placeholder="封存人" class="filter">
+        <button id="rp-seal" class="primary">封存批次快照</button>
+        <button id="rp-list" class="ghost">刷新报告列表</button>
+      </div>
+      <div id="rp-preview-box" class="card" hidden></div>
+      <div id="rp-list-box"></div>
+      <div id="rp-detail" class="card" hidden></div>
+    </section>
+  </main>
+
+  <div id="toast" class="toast" hidden></div>
+  <script src="/static/app.js"></script>
+</body>
+</html>

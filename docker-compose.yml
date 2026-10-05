@@ -1,0 +1,18 @@
+services:
+  cable-review:
+    build: .
+    image: cable-joint-review:latest
+    container_name: cable-joint-review
+    ports:
+      - "5000:5000"
+    volumes:
+      - cable-data:/app/data
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request;urllib.request.urlopen('http://localhost:5000/')"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+
+volumes:
+  cable-data:
